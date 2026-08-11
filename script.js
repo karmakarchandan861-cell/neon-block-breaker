@@ -237,11 +237,11 @@ function loseLife() {
   }, 550);
 }
 
-function movePaddle() {
+function movePaddle(dt = 1 / 60) {
   if (!state.running || state.paused || state.gameEnded) return;
 
-  if (leftPressed) paddle.x -= paddle.speed;
-  if (rightPressed) paddle.x += paddle.speed;
+  if (leftPressed) paddle.x -= paddle.speed * dt * 60;
+  if (rightPressed) paddle.x += paddle.speed * dt * 60;
 
   clampPaddle();
 }
@@ -250,11 +250,11 @@ function clampPaddle() {
   paddle.x = Math.max(0, Math.min(W - paddle.width, paddle.x));
 }
 
-function updateBall() {
+function updateBall(dt = 1 / 60) {
   if (!state.running || state.paused || state.gameEnded) return;
 
-  ball.x += ball.speedX;
-  ball.y += ball.speedY;
+  ball.x += ball.speedX * dt * 60;
+  ball.y += ball.speedY * dt * 60;
 
   // Left / right walls
   if (ball.x - ball.radius <= 0) {
@@ -464,11 +464,22 @@ function render() {
   drawBall();
 }
 
-function gameLoop() {
-  movePaddle();
-  updateBall();
+let lastFrameTime = 0;
+
+function gameLoop(timestamp) {
+  if (!lastFrameTime) lastFrameTime = timestamp;
+
+  let dt = (timestamp - lastFrameTime) / 1000;
+  lastFrameTime = timestamp;
+
+  // Prevent a huge jump after switching tabs/backgrounding the phone.
+  dt = Math.min(dt, 0.033);
+
+  movePaddle(dt);
+  updateBall(dt);
   updateBlocks();
   render();
+
   requestAnimationFrame(gameLoop);
 }
 
