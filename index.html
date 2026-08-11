@@ -1,43 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chandan Game</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Neon Block Breaker - a responsive arcade brick breaker game.">
+  <title>Neon Block Breaker</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Neon Block Breaker home">
+        <span class="brand-icon">◈</span>
+        <span>NEON<span>BREAKER</span></span>
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="nav-link active" href="#home" data-page="home">Home</a>
+        <a class="nav-link" href="#play" data-page="play">Play</a>
+        <a class="nav-link" href="#leaderboard" data-page="leaderboard">Leaderboard</a>
+        <a class="nav-link" href="#how-to-play" data-page="how">How to Play</a>
+      </nav>
+      <button class="icon-btn" id="themeBtn" type="button" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </header>
 
-    <div class="game-container">
-
-        <h1>🎮 Destroy the blocks</h1>
-
-        <div class="game-info">
-            <span>❤️ Lives: <b id="lives">3</b></span>
-            <span>🏆 Score: <b id="score">0</b></span>
+    <main>
+      <!-- HOME -->
+      <section class="page active" id="home">
+        <div class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow">ARCADE • 5 LEVELS • ENDLESS PRACTICE</div>
+            <h1>BREAK THE<br><span>BLOCKS.</span></h1>
+            <p>Control the paddle, keep the ball alive, destroy every block and survive all five increasingly difficult levels.</p>
+            <div class="hero-actions">
+              <a class="primary-btn" href="#play">▶ PLAY NOW</a>
+              <a class="secondary-btn" href="#how-to-play">How to play</a>
+            </div>
+            <div class="mini-stats">
+              <div><strong>05</strong><span>Levels</span></div>
+              <div><strong>03</strong><span>Lives</span></div>
+              <div><strong>10</strong><span>Points / block</span></div>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="glow-ball"></div>
+            <div class="art-paddle"></div>
+            <div class="art-blocks">
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <div class="art-grid"></div>
+          </div>
         </div>
 
-        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span>⚡</span><h3>Faster Levels</h3><p>Every level increases the ball speed and challenge.</p>
+          </article>
+          <article class="feature-card">
+            <span>💥</span><h3>Damage Blocks</h3><p>Advanced levels introduce blocks that need multiple hits.</p>
+          </article>
+          <article class="feature-card">
+            <span>📱</span><h3>Any Screen</h3><p>Responsive controls work on desktop, tablet and mobile.</p>
+          </article>
+        </div>
+      </section>
 
-        <button id="restartBtn">🔄 Restart</button>
+      <!-- PLAY -->
+      <section class="page" id="play">
+        <div class="game-page-head">
+          <div>
+            <div class="eyebrow">LIVE ARCADE</div>
+            <h2>Neon Block Breaker</h2>
+          </div>
+          <div class="game-actions">
+            <button class="small-btn" id="pauseBtn" type="button">Ⅱ Pause</button>
+            <button class="small-btn" id="fullscreenBtn" type="button">⛶ Fullscreen</button>
+          </div>
+        </div>
 
-        <p>Use ← → keys, mouse or touch to control the stick</p>
+        <div class="game-wrap" id="gameWrap">
+          <div class="hud">
+            <div><span>LEVEL</span><strong id="level">1</strong></div>
+            <div><span>SCORE</span><strong id="score">0</strong></div>
+            <div><span>LIVES</span><strong id="lives">3</strong></div>
+            <div><span>BEST</span><strong id="bestScore">0</strong></div>
+          </div>
 
+          <div class="canvas-shell">
+            <canvas id="gameCanvas" width="900" height="600" aria-label="Block breaker game"></canvas>
+            <div class="canvas-overlay hidden" id="pauseOverlay">
+              <div class="overlay-card">
+                <div class="overlay-icon">Ⅱ</div>
+                <h3>PAUSED</h3>
+                <p>Take a breath. Your run is waiting.</p>
+                <button class="primary-btn compact" id="resumeBtn" type="button">Resume</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="game-bottom">
+            <div class="control-tip">← → / A D / Mouse / Touch</div>
+            <button class="small-btn" id="restartBtn" type="button">↻ Restart</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEADERBOARD -->
+      <section class="page" id="leaderboard">
+        <div class="section-head">
+          <div class="eyebrow">LOCAL RECORDS</div>
+          <h2>Leaderboard</h2>
+          <p>Your best runs are stored in this browser.</p>
+        </div>
+        <div class="leaderboard-card">
+          <div class="leaderboard-top">
+            <span>RANK</span><span>PLAYER</span><span>SCORE</span><span>LEVEL</span>
+          </div>
+          <div id="leaderboardRows"></div>
+          <button class="secondary-btn" id="clearScoresBtn" type="button">Clear local records</button>
+        </div>
+      </section>
+
+      <!-- HOW TO PLAY -->
+      <section class="page" id="how-to-play">
+        <div class="section-head">
+          <div class="eyebrow">QUICK GUIDE</div>
+          <h2>How to Play</h2>
+          <p>Simple rules. Increasing pressure.</p>
+        </div>
+        <div class="how-grid">
+          <article class="how-card"><b>01</b><h3>Move the paddle</h3><p>Use the left/right arrow keys, A/D, mouse or drag your finger across the game.</p></article>
+          <article class="how-card"><b>02</b><h3>Break every block</h3><p>Each completely destroyed block awards exactly <strong>10 points</strong>.</p></article>
+          <article class="how-card"><b>03</b><h3>Protect your lives</h3><p>Missing the paddle costs one life. You get three tries per run.</p></article>
+          <article class="how-card"><b>04</b><h3>Clear all five levels</h3><p>Level 2 begins automatically after every Level 1 block is destroyed. The ball gets faster.</p></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>NEONBREAKER</span>
+      <span>Built with HTML • CSS • JavaScript</span>
+    </footer>
+  </div>
+
+  <!-- GAME MODAL -->
+  <div class="modal hidden" id="gameModal">
+    <div class="modal-card">
+      <div class="modal-icon" id="modalIcon">💀</div>
+      <div class="eyebrow" id="modalEyebrow">RUN ENDED</div>
+      <h2 id="modalTitle">GAME OVER</h2>
+      <p id="modalText">You used all 3 lives.</p>
+      <div class="modal-score">
+        <span>FINAL SCORE</span>
+        <strong id="finalScore">0</strong>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-btn compact" id="playAgainBtn" type="button">Play Again</button>
+        <a class="secondary-btn compact" href="#home" id="homeBtn">Home</a>
+      </div>
     </div>
+  </div>
 
-    <div id="gameMessage" class="game-message">
-
-        <h2 id="messageTitle">GAME OVER</h2>
-
-        <p id="messageText"></p>
-
-        <button id="playAgain">Play Again</button>
-
-    </div>
-
-    <script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
