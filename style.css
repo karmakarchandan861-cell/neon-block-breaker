@@ -1,11 +1,12 @@
 /* =========================================================
-   CHANDAN GAME - DESTROY THE BLOCKS
-   FULL RESPONSIVE CSS
+   CHANDAN GAME
+   NEON BLOCK BREAKER - FINAL CSS
    ========================================================= */
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    RESET
-   --------------------------------------------------------- */
+   ========================================================= */
 
 * {
     margin: 0;
@@ -14,9 +15,9 @@
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    BODY
-   --------------------------------------------------------- */
+   ========================================================= */
 
 html {
     width: 100%;
@@ -27,30 +28,139 @@ body {
     width: 100%;
     min-height: 100vh;
 
-    background: #020711;
-
-    color: #ffffff;
-
     font-family:
         Arial,
         Helvetica,
         sans-serif;
 
+    color: #ffffff;
+
+    background: #020711;
+
     display: flex;
-
     justify-content: center;
-
     align-items: flex-start;
 
     overflow-x: hidden;
 
     padding: 0 12px;
+
+    position: relative;
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
+   ANIMATED NEON BACKGROUND
+   ========================================================= */
+
+body::before {
+    content: "";
+
+    position: fixed;
+
+    inset: -50%;
+
+    width: 200%;
+    height: 200%;
+
+    background:
+        radial-gradient(
+            circle at 20% 30%,
+            rgba(0, 210, 255, 0.13),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 80% 70%,
+            rgba(140, 0, 255, 0.12),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 50% 50%,
+            rgba(0, 120, 255, 0.06),
+            transparent 35%
+        );
+
+    animation: neonBackground 12s ease-in-out infinite alternate;
+
+    pointer-events: none;
+
+    z-index: -2;
+}
+
+
+/* =========================================================
+   NEON GRID
+   ========================================================= */
+
+body::after {
+    content: "";
+
+    position: fixed;
+
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(0, 180, 255, 0.035) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0, 180, 255, 0.035) 1px,
+            transparent 1px
+        );
+
+    background-size: 45px 45px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+            transparent,
+            black 20%,
+            black 80%,
+            transparent
+        );
+
+    pointer-events: none;
+
+    z-index: -1;
+}
+
+
+/* =========================================================
+   BACKGROUND ANIMATION
+   ========================================================= */
+
+@keyframes neonBackground {
+
+    0% {
+        transform: translate(
+            -2%,
+            -1%
+        ) scale(1);
+    }
+
+    50% {
+        transform: translate(
+            2%,
+            1%
+        ) scale(1.02);
+    }
+
+    100% {
+        transform: translate(
+            -1%,
+            2%
+        ) scale(1.04);
+    }
+}
+
+
+/* =========================================================
    GAME CONTAINER
-   --------------------------------------------------------- */
+   ========================================================= */
 
 .game-container {
     width: 100%;
@@ -59,39 +169,69 @@ body {
 
     margin: 0 auto;
 
-    padding: 0 0 20px;
+    padding-bottom: 25px;
 
     text-align: center;
+
+    position: relative;
 }
 
 
-/* ---------------------------------------------------------
-   GAME TITLE
-   --------------------------------------------------------- */
+/* =========================================================
+   TITLE
+   ========================================================= */
 
 .game-container h1 {
-    margin: 0 0 6px;
-
-    padding: 0;
+    margin: 0 0 7px;
 
     color: #38bdf8;
 
-    font-size: 26px;
+    font-size: 27px;
 
-    font-weight: 800;
+    font-weight: 900;
 
     line-height: 1.2;
+
+    letter-spacing: 0.2px;
 
     text-align: center;
 
     text-shadow:
-        0 0 8px rgba(56, 189, 248, 0.35);
+        0 0 5px #38bdf8,
+        0 0 10px #38bdf8,
+        0 0 20px rgba(56, 189, 248, 0.8),
+        0 0 35px rgba(56, 189, 248, 0.45);
+
+    animation: titleGlow 2.5s ease-in-out infinite alternate;
 }
 
 
-/* ---------------------------------------------------------
-   GAME INFORMATION BAR
-   --------------------------------------------------------- */
+/* =========================================================
+   TITLE GLOW
+   ========================================================= */
+
+@keyframes titleGlow {
+
+    from {
+        text-shadow:
+            0 0 5px #38bdf8,
+            0 0 10px #38bdf8,
+            0 0 18px rgba(56, 189, 248, 0.6);
+    }
+
+    to {
+        text-shadow:
+            0 0 6px #38bdf8,
+            0 0 14px #38bdf8,
+            0 0 28px rgba(56, 189, 248, 0.9),
+            0 0 40px rgba(56, 189, 248, 0.4);
+    }
+}
+
+
+/* =========================================================
+   GAME INFO
+   ========================================================= */
 
 .game-info {
     width: 100%;
@@ -104,19 +244,24 @@ body {
 
     padding: 0 14px;
 
-    background: #050b18;
-
-    border: 1px solid #22c7ff;
-
-    border-bottom: none;
-
-    border-radius: 7px 7px 0 0;
-
     display: flex;
 
     align-items: center;
 
     justify-content: space-between;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(2, 10, 25, 0.98),
+            rgba(7, 17, 34, 0.98)
+        );
+
+    border: 1px solid #22c7ff;
+
+    border-bottom: none;
+
+    border-radius: 8px 8px 0 0;
 
     color: #ffffff;
 
@@ -127,23 +272,31 @@ body {
     position: relative;
 
     z-index: 2;
+
+    box-shadow:
+        0 0 5px rgba(34, 199, 255, 0.7),
+        0 0 15px rgba(34, 199, 255, 0.3),
+        inset 0 0 12px rgba(0, 180, 255, 0.08);
 }
 
 
-/* ---------------------------------------------------------
-   SCORE / LIVES NUMBERS
-   --------------------------------------------------------- */
+/* =========================================================
+   INFO NUMBERS
+   ========================================================= */
 
 .game-info b {
     color: #facc15;
 
-    font-weight: 800;
+    font-weight: 900;
+
+    text-shadow:
+        0 0 5px rgba(250, 204, 21, 0.7);
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    CANVAS
-   --------------------------------------------------------- */
+   ========================================================= */
 
 #gameCanvas {
     display: block;
@@ -158,16 +311,24 @@ body {
 
     margin: 0 auto;
 
-    background: #020711;
+    background:
+        radial-gradient(
+            circle at 50% 30%,
+            rgba(0, 110, 180, 0.07),
+            transparent 45%
+        ),
+
+        #020711;
 
     border: 1px solid #22c7ff;
 
-    border-top: 1px solid #22c7ff;
-
-    border-radius: 0 0 0 0;
+    border-radius: 0 0 7px 7px;
 
     box-shadow:
-        0 0 12px rgba(34, 199, 255, 0.15);
+        0 0 5px rgba(34, 199, 255, 0.9),
+        0 0 15px rgba(34, 199, 255, 0.35),
+        0 0 35px rgba(34, 199, 255, 0.12),
+        inset 0 0 25px rgba(0, 150, 255, 0.08);
 
     touch-action: none;
 
@@ -179,32 +340,37 @@ body {
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    RESTART BUTTON
-   --------------------------------------------------------- */
+   ========================================================= */
 
 #restartBtn {
+    width: 96px;
+
+    height: 33px;
+
     margin-top: 8px;
-
-    width: 95px;
-
-    height: 32px;
 
     padding: 0;
 
-    border: none;
+    border: 1px solid rgba(56, 189, 248, 0.8);
 
-    border-radius: 6px;
+    border-radius: 7px;
 
-    background: #38bdf8;
+    background:
+        linear-gradient(
+            135deg,
+            #38bdf8,
+            #22aee8
+        );
 
-    color: #06111c;
+    color: #03111b;
 
     font-size: 13px;
 
-    font-weight: 700;
+    font-weight: 800;
 
-    cursor: pointer;
+    line-height: 1;
 
     display: inline-flex;
 
@@ -212,80 +378,93 @@ body {
 
     justify-content: center;
 
-    line-height: 1;
+    cursor: pointer;
+
+    box-shadow:
+        0 0 5px rgba(56, 189, 248, 0.8),
+        0 0 14px rgba(56, 189, 248, 0.45);
 
     transition:
         transform 0.15s ease,
-        background 0.15s ease;
+        box-shadow 0.15s ease,
+        filter 0.15s ease;
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    RESTART HOVER
-   --------------------------------------------------------- */
+   ========================================================= */
 
 #restartBtn:hover {
-    background: #67d5ff;
+    transform: translateY(-2px);
 
-    transform: translateY(-1px);
+    filter: brightness(1.1);
+
+    box-shadow:
+        0 0 7px rgba(56, 189, 248, 1),
+        0 0 20px rgba(56, 189, 248, 0.65);
 }
 
 
-/* ---------------------------------------------------------
-   RESTART ACTIVE
-   --------------------------------------------------------- */
+/* =========================================================
+   RESTART CLICK
+   ========================================================= */
 
 #restartBtn:active {
-    transform: scale(0.96);
+    transform: scale(0.95);
 }
 
 
-/* ---------------------------------------------------------
-   INSTRUCTION TEXT
-   --------------------------------------------------------- */
+/* =========================================================
+   INSTRUCTION
+   ========================================================= */
 
 .game-container > p {
     margin-top: 7px;
 
-    color: #d1d5db;
+    color: #a9c5d4;
 
     font-size: 13px;
 
     line-height: 1.4;
 
     text-align: center;
+
+    text-shadow:
+        0 0 5px rgba(56, 189, 248, 0.2);
 }
 
 
 /* =========================================================
-   GAME MESSAGE / GAME OVER
+   GAME OVER / MESSAGE
    ========================================================= */
 
 .game-message {
     position: fixed;
 
     top: 50%;
-
     left: 50%;
 
     transform: translate(-50%, -50%);
 
     width: 320px;
 
-    max-width: calc(100vw - 40px);
+    max-width: calc(100vw - 35px);
 
-    min-height: 230px;
+    min-height: 235px;
 
-    padding: 28px 24px;
+    padding: 27px 24px;
 
-    background: #111827;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 24, 39, 0.99),
+            rgba(9, 18, 34, 0.99)
+        );
 
     border: 2px solid #22c7ff;
 
-    border-radius: 14px;
-
-    box-shadow:
-        0 0 25px rgba(34, 199, 255, 0.25);
+    border-radius: 15px;
 
     display: none;
 
@@ -298,40 +477,79 @@ body {
     text-align: center;
 
     z-index: 9999;
+
+    box-shadow:
+        0 0 5px #22c7ff,
+        0 0 15px rgba(34, 199, 255, 0.8),
+        0 0 35px rgba(34, 199, 255, 0.35),
+        0 0 70px rgba(34, 199, 255, 0.12);
+
+    animation: messageAppear 0.25s ease-out;
 }
 
 
-/* ---------------------------------------------------------
-   GAME MESSAGE TITLE
-   --------------------------------------------------------- */
+/* =========================================================
+   MESSAGE ANIMATION
+   ========================================================= */
+
+@keyframes messageAppear {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -48%)
+            scale(0.94);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   MESSAGE TITLE
+   ========================================================= */
 
 .game-message h2 {
     width: 100%;
 
-    margin: 0 0 14px;
+    margin: 0 0 13px;
 
     color: #38bdf8;
 
     font-size: 32px;
 
-    font-weight: 800;
+    font-weight: 900;
 
     line-height: 1.1;
 
     text-align: center;
+
+    letter-spacing: 0.5px;
+
+    text-shadow:
+        0 0 5px #38bdf8,
+        0 0 12px #38bdf8,
+        0 0 25px rgba(56, 189, 248, 0.7);
 }
 
 
-/* ---------------------------------------------------------
-   GAME MESSAGE TEXT
-   --------------------------------------------------------- */
+/* =========================================================
+   MESSAGE TEXT
+   ========================================================= */
 
 .game-message p {
     width: 100%;
 
-    margin: 0 0 22px;
+    margin: 0 0 21px;
 
-    color: #d1d5db;
+    color: #d7e5ee;
 
     font-size: 15px;
 
@@ -341,12 +559,12 @@ body {
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    PLAY AGAIN BUTTON
-   --------------------------------------------------------- */
+   ========================================================= */
 
 #playAgain {
-    width: 120px;
+    width: 125px;
 
     height: 44px;
 
@@ -354,21 +572,24 @@ body {
 
     padding: 0;
 
-    border: none;
+    border: 1px solid rgba(56, 189, 248, 0.9);
 
     border-radius: 8px;
 
-    background: #38bdf8;
+    background:
+        linear-gradient(
+            135deg,
+            #38bdf8,
+            #20aeea
+        );
 
-    color: #06111c;
+    color: #03111b;
 
     font-size: 15px;
 
-    font-weight: 700;
+    font-weight: 800;
 
     line-height: 1;
-
-    text-align: center;
 
     display: flex;
 
@@ -376,31 +597,44 @@ body {
 
     justify-content: center;
 
+    text-align: center;
+
     cursor: pointer;
+
+    box-shadow:
+        0 0 6px rgba(56, 189, 248, 0.9),
+        0 0 15px rgba(56, 189, 248, 0.5),
+        0 0 30px rgba(56, 189, 248, 0.2);
 
     transition:
         transform 0.15s ease,
-        background 0.15s ease;
+        filter 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    PLAY AGAIN HOVER
-   --------------------------------------------------------- */
+   ========================================================= */
 
 #playAgain:hover {
-    background: #67d5ff;
+    filter: brightness(1.12);
 
     transform: translateY(-2px);
+
+    box-shadow:
+        0 0 8px rgba(56, 189, 248, 1),
+        0 0 20px rgba(56, 189, 248, 0.7),
+        0 0 35px rgba(56, 189, 248, 0.3);
 }
 
 
-/* ---------------------------------------------------------
-   PLAY AGAIN ACTIVE
-   --------------------------------------------------------- */
+/* =========================================================
+   PLAY AGAIN CLICK
+   ========================================================= */
 
 #playAgain:active {
-    transform: scale(0.96);
+    transform: scale(0.95);
 }
 
 
@@ -411,14 +645,12 @@ body {
 @media (max-width: 600px) {
 
     body {
-        padding: 0 8px;
+        padding: 0 7px;
     }
 
 
     .game-container {
         width: 100%;
-
-        padding-bottom: 15px;
     }
 
 
@@ -445,7 +677,7 @@ body {
 
         height: auto;
 
-        border-radius: 0;
+        border-radius: 0 0 6px 6px;
     }
 
 
@@ -467,10 +699,6 @@ body {
     }
 
 
-    /* -----------------------------
-       MOBILE GAME OVER BOX
-       ----------------------------- */
-
     .game-message {
         width: 290px;
 
@@ -487,14 +715,14 @@ body {
     .game-message h2 {
         font-size: 28px;
 
-        margin-bottom: 12px;
+        margin-bottom: 11px;
     }
 
 
     .game-message p {
         font-size: 14px;
 
-        margin-bottom: 20px;
+        margin-bottom: 19px;
 
         line-height: 1.45;
     }
@@ -506,14 +734,12 @@ body {
         height: 44px;
 
         font-size: 14px;
-
-        border-radius: 8px;
     }
 }
 
 
 /* =========================================================
-   VERY SMALL PHONES
+   SMALL PHONES
    ========================================================= */
 
 @media (max-width: 380px) {
@@ -581,35 +807,14 @@ body {
 
 
 /* =========================================================
-   TOUCH DEVICES
-   ========================================================= */
-
-@media (hover: none) and (pointer: coarse) {
-
-    #restartBtn,
-    #playAgain {
-        -webkit-tap-highlight-color: transparent;
-    }
-
-
-    #restartBtn:hover,
-    #playAgain:hover {
-        transform: none;
-    }
-
-
-    #restartBtn:active,
-    #playAgain:active {
-        transform: scale(0.95);
-    }
-}
-
-
-/* =========================================================
    LANDSCAPE MOBILE
    ========================================================= */
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (
+    max-height: 500px
+) and (
+    orientation: landscape
+) {
 
     .game-container h1 {
         font-size: 18px;
@@ -669,7 +874,38 @@ body {
 
 
 /* =========================================================
-   PREVENT TEXT SELECTION
+   TOUCH DEVICES
+   ========================================================= */
+
+@media (
+    hover: none
+) and (
+    pointer: coarse
+) {
+
+    #restartBtn,
+    #playAgain {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+
+    #restartBtn:hover,
+    #playAgain:hover {
+        transform: none;
+
+        filter: none;
+    }
+
+
+    #restartBtn:active,
+    #playAgain:active {
+        transform: scale(0.95);
+    }
+}
+
+
+/* =========================================================
+   DISABLE TEXT SELECTION
    ========================================================= */
 
 #gameCanvas,
@@ -686,13 +922,31 @@ body {
 
 
 /* =========================================================
-   SAFE AREA FOR MOBILE
+   MOBILE SAFE AREA
    ========================================================= */
 
-@supports (padding: env(safe-area-inset-bottom)) {
+@supports (
+    padding: env(safe-area-inset-bottom)
+) {
 
     body {
         padding-bottom:
             env(safe-area-inset-bottom);
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+    prefers-reduced-motion: reduce
+) {
+
+    body::before,
+    .game-container h1,
+    .game-message {
+        animation: none;
     }
 }
