@@ -1,737 +1,1208 @@
 // ============================================================
-// NEON BLOCK BREAKER - PROFESSIONAL EDITION
+// CHANDAN GAME - DESTROY THE BLOCKS
+// Compatible with your current index.html
+// Mobile optimized
 // ============================================================
 
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d", {
+    alpha: false,
+    desynchronized: true
+});
 
-const W = canvas.width;   // 900
-const H = canvas.height;  // 600
+const livesEl = document.getElementById("lives");
+const scoreEl = document.getElementById("score");
 
-const state = {
-  score: 0,
-  lives: 3,
-  level: 1,
-  running: false,
-  paused: false,
-  changingLevel: false,
-  gameEnded: false,
-  muted: false
-};
+const restartBtn = document.getElementById("restartBtn");
+
+const gameMessage = document.getElementById("gameMessage");
+const messageTitle = document.getElementById("messageTitle");
+const messageText = document.getElementById("messageText");
+const playAgainBtn = document.getElementById("playAgain");
+
+// ============================================================
+// CANVAS
+// ============================================================
+
+const W = 900;
+const H = 600;
+
+canvas.width = W;
+canvas.height = H;
+
+// ============================================================
+// GAME SETTINGS
+// ============================================================
+
+const MAX_LEVEL = 5;
+
+let score = 0;
+let lives = 3;
+let level = 1;
+
+let gameRunning = true;
+let gamePaused = false;
+let gameOver = false;
+let changingLevel = false;
+
+// ============================================================
+// BALL
+// ============================================================
 
 const ball = {
-  x: W / 2,
-  y: H - 90,
-  radius: 9,
-  speedX: 4,
-  speedY: -4
+    x: W / 2,
+    y: H - 100,
+
+    radius: 9,
+
+    vx: 260,
+    vy: -260
 };
 
+// ============================================================
+// PADDLE / STICK
+// ============================================================
+
 const paddle = {
-  x: W / 2 - 65,
-  y: H - 35,
-  width: 130,
-  height: 15,
-  speed: 8
+    x: W / 2 - 70,
+
+    y: H - 40,
+
+    width: 140,
+
+    height: 15,
+
+    speed: 650
 };
+
+// ============================================================
+// BLOCK SETTINGS
+// ============================================================
+
+const columns = 10;
+
+const blockWidth = 75;
+const blockHeight = 25;
+
+const blockGap = 10;
+
+const blockStartX = 25;
+const blockStartY = 45;
+
+let blocks = [];
+
+// ============================================================
+// CONTROLS
+// ============================================================
 
 let leftPressed = false;
 let rightPressed = false;
-let blocks = [];
 
-const LEVELS = 5;
-const COLUMNS = 10;
-const BLOCK_W = 75;
-const BLOCK_H = 25;
-const GAP = 10;
-const OFFSET_X = 25;
-const OFFSET_Y = 50;
+// ============================================================
+// PERFORMANCE
+// ============================================================
 
-const scoreEl = document.getElementById("score");
-const livesEl = document.getElementById("lives");
-const levelEl = document.getElementById("level");
-const bestEl = document.getElementById("bestScore");
-const modal = document.getElementById("gameModal");
-const pauseOverlay = document.getElementById("pauseOverlay");
+let lastTime = 0;
 
-let bestScore = Number(localStorage.getItem("neonBreakerBest") || 0);
-bestEl.textContent = bestScore;
+// ============================================================
+// INITIAL MESSAGE HIDDEN
+// ============================================================
 
-function updateHUD() {
-  scoreEl.textContent = state.score;
-  livesEl.textContent = state.lives;
-  levelEl.textContent = state.level;
-  bestEl.textContent = Math.max(bestScore, state.score);
-}
+gameMessage.style.display = "none";
 
-function levelSpeed() {
-  return Math.min(4 + state.level - 1, 8);
-}
-
-function rowsForLevel() {
-  return Math.min(4 + state.level, 8);
-}
-
-function healthForBlock(row) {
-  if (state.level >= 4 && row % 2 === 0) return 3;
-  if (state.level >= 2) return 2;
-  return 1;
-}
+// ============================================================
+// CREATE LEVEL
+// ============================================================
 
 function createBlocks() {
-  blocks = [];
-  const rows = rowsForLevel();
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < COLUMNS; col++) {
-      const health = healthForBlock(row);
+    blocks = [];
 
-      blocks.push({
-        x: OFFSET_X + col * (BLOCK_W + GAP),
-        y: OFFSET_Y + row * (BLOCK_H + GAP),
-        width: BLOCK_W,
-        height: BLOCK_H,
-        health,
-        maxHealth: health,
-        alive: true
-      });
+    // More rows as level increases
+    const rows = Math.min(4 + level, 8);
+
+    for (let row = 0; row < rows; row++) {
+
+        for (let col = 0; col < columns; col++) {
+
+            let health = 1;
+
+            // Higher levels have stronger blocks
+            if (level >= 3 && row % 3 === 0) {
+                health = 2;
+            }
+
+            if (level >= 5 && row % 2 === 0) {
+                health = 3;
+            }
+
+            blocks.push({
+
+                x:
+                    blockStartX +
+                    col * (blockWidth + blockGap),
+
+                y:
+                    blockStartY +
+                    row * (blockHeight + blockGap),
+
+                width: blockWidth,
+
+                height: blockHeight,
+
+                health: health,
+
+                maxHealth: health,
+
+                alive: true
+            });
+        }
     }
-  }
 }
+
+// ============================================================
+// LEVEL SPEED
+// ============================================================
+
+function getSpeed() {
+
+    // Level 1 = 260
+    // Level 2 = 310
+    // Level 3 = 360
+    // Level 4 = 410
+    // Level 5 = 460
+
+    return 260 + (level - 1) * 50;
+}
+
+// ============================================================
+// RESET BALL
+// ============================================================
 
 function resetBall() {
-  const speed = levelSpeed();
 
-  ball.x = W / 2;
-  ball.y = H - 90;
-  ball.speedX = Math.random() > 0.5 ? speed : -speed;
-  ball.speedY = -speed;
+    const speed = getSpeed();
 
-  paddle.x = W / 2 - paddle.width / 2;
+    ball.x = W / 2;
+
+    ball.y = H - 100;
+
+    // Random left/right direction
+
+    ball.vx =
+        Math.random() > 0.5
+            ? speed
+            : -speed;
+
+    ball.vy = -speed;
+
+    paddle.x =
+        W / 2 -
+        paddle.width / 2;
 }
 
-function clearControls() {
-  leftPressed = false;
-  rightPressed = false;
+// ============================================================
+// UPDATE HUD
+// ============================================================
+
+function updateHUD() {
+
+    livesEl.textContent = lives;
+
+    scoreEl.textContent = score;
 }
 
-function startNewGame() {
-  state.score = 0;
-  state.lives = 3;
-  state.level = 1;
-  state.running = true;
-  state.paused = false;
-  state.changingLevel = false;
-  state.gameEnded = false;
+// ============================================================
+// START GAME
+// ============================================================
 
-  clearControls();
-  createBlocks();
-  resetBall();
-  closeModal();
-  hidePause();
-  updateHUD();
+function startGame() {
+
+    score = 0;
+
+    lives = 3;
+
+    level = 1;
+
+    gameRunning = true;
+
+    gamePaused = false;
+
+    gameOver = false;
+
+    changingLevel = false;
+
+    leftPressed = false;
+
+    rightPressed = false;
+
+    hideMessage();
+
+    createBlocks();
+
+    resetBall();
+
+    updateHUD();
 }
 
-function endGame() {
-  state.running = false;
-  state.paused = false;
-  state.gameEnded = true;
-  clearControls();
+// ============================================================
+// GAME OVER
+// ============================================================
 
-  if (state.score > bestScore) {
-    bestScore = state.score;
-    localStorage.setItem("neonBreakerBest", String(bestScore));
-  }
+function gameOverScreen() {
 
-  updateHUD();
-  showModal(
-    "💀",
-    "GAME OVER",
-    "You used all 3 lives.",
-    "RUN ENDED"
-  );
+    gameRunning = false;
+
+    gamePaused = false;
+
+    gameOver = true;
+
+    changingLevel = false;
+
+    // IMPORTANT:
+    // Stop keyboard / touch movement
+
+    leftPressed = false;
+    rightPressed = false;
+
+    messageTitle.textContent = "💀 GAME OVER";
+
+    messageText.textContent =
+        "You used all 3 tries! Score: " + score;
+
+    gameMessage.style.display = "flex";
 }
 
-function showWin() {
-  state.running = false;
-  state.paused = false;
-  state.gameEnded = true;
-  clearControls();
+// ============================================================
+// LEVEL COMPLETE
+// ============================================================
 
-  if (state.score > bestScore) {
-    bestScore = state.score;
-    localStorage.setItem("neonBreakerBest", String(bestScore));
-  }
+function levelComplete() {
 
-  updateHUD();
-  showModal(
-    "🏆",
-    "YOU WIN!",
-    "Amazing! You cleared all five levels.",
-    "RUN COMPLETE"
-  );
+    if (changingLevel || gameOver) {
+        return;
+    }
+
+    changingLevel = true;
+
+    gameRunning = false;
+
+    leftPressed = false;
+
+    rightPressed = false;
+
+    // Last level completed
+
+    if (level >= MAX_LEVEL) {
+
+        messageTitle.textContent =
+            "🏆 YOU WIN!";
+
+        messageText.textContent =
+            "Amazing! You completed all 5 levels! Score: " +
+            score;
+
+        gameMessage.style.display = "flex";
+
+        gameOver = true;
+
+        return;
+    }
+
+    // Next level
+
+    level++;
+
+    messageTitle.textContent =
+        "⚡ LEVEL " + level;
+
+    messageText.textContent =
+        "Level complete! Get ready for faster speed.";
+
+    gameMessage.style.display = "flex";
+
+    createBlocks();
+
+    resetBall();
+
+    updateHUD();
+
+    // Automatically continue
+
+    setTimeout(() => {
+
+        if (gameOver) {
+            return;
+        }
+
+        hideMessage();
+
+        changingLevel = false;
+
+        gameRunning = true;
+
+    }, 1200);
 }
 
-function showModal(icon, title, text, eyebrow) {
-  document.getElementById("modalIcon").textContent = icon;
-  document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalText").textContent = text;
-  document.getElementById("modalEyebrow").textContent = eyebrow;
-  document.getElementById("finalScore").textContent = state.score;
-  modal.classList.remove("hidden");
+// ============================================================
+// HIDE MESSAGE
+// ============================================================
+
+function hideMessage() {
+
+    gameMessage.style.display = "none";
 }
 
-function closeModal() {
-  modal.classList.add("hidden");
-}
-
-function nextLevel() {
-  state.changingLevel = true;
-  state.running = false;
-  clearControls();
-
-  state.level++;
-
-  if (state.level > LEVELS) {
-    showWin();
-    return;
-  }
-
-  createBlocks();
-  resetBall();
-  updateHUD();
-
-  showModal(
-    "⚡",
-    `LEVEL ${state.level}`,
-    "New blocks. Higher speed. Get ready.",
-    "NEXT LEVEL"
-  );
-
-  setTimeout(() => {
-    if (state.gameEnded) return;
-    closeModal();
-    state.changingLevel = false;
-    state.running = true;
-  }, 1500);
-}
+// ============================================================
+// LOSE LIFE
+// ============================================================
 
 function loseLife() {
-  state.lives--;
-  clearControls();
-  updateHUD();
 
-  if (state.lives <= 0) {
-    endGame();
-    return;
-  }
+    lives--;
 
-  resetBall();
+    updateHUD();
 
-  // Small life-loss pause
-  state.running = false;
-  setTimeout(() => {
-    if (!state.gameEnded && !state.changingLevel) {
-      state.running = true;
-    }
-  }, 550);
-}
+    leftPressed = false;
 
-function movePaddle() {
-  if (!state.running || state.paused || state.gameEnded) return;
+    rightPressed = false;
 
-  if (leftPressed) paddle.x -= paddle.speed;
-  if (rightPressed) paddle.x += paddle.speed;
+    if (lives <= 0) {
 
-  clampPaddle();
-}
+        gameOverScreen();
 
-function clampPaddle() {
-  paddle.x = Math.max(0, Math.min(W - paddle.width, paddle.x));
-}
-
-function updateBall() {
-  if (!state.running || state.paused || state.gameEnded) return;
-
-  ball.x += ball.speedX;
-  ball.y += ball.speedY;
-
-  // Left / right walls
-  if (ball.x - ball.radius <= 0) {
-    ball.x = ball.radius;
-    ball.speedX = Math.abs(ball.speedX);
-  }
-
-  if (ball.x + ball.radius >= W) {
-    ball.x = W - ball.radius;
-    ball.speedX = -Math.abs(ball.speedX);
-  }
-
-  // Top wall
-  if (ball.y - ball.radius <= 0) {
-    ball.y = ball.radius;
-    ball.speedY = Math.abs(ball.speedY);
-  }
-
-  // Paddle collision
-  if (
-    ball.speedY > 0 &&
-    ball.y + ball.radius >= paddle.y &&
-    ball.y - ball.radius <= paddle.y + paddle.height &&
-    ball.x >= paddle.x &&
-    ball.x <= paddle.x + paddle.width
-  ) {
-    const relative = (ball.x - paddle.x) / paddle.width;
-    ball.speedX = (relative - 0.5) * 10;
-
-    if (Math.abs(ball.speedX) < 2) {
-      ball.speedX = ball.speedX < 0 ? -2 : 2;
+        return;
     }
 
-    ball.speedY = -Math.abs(ball.speedY);
-    ball.y = paddle.y - ball.radius - 1;
-  }
+    // Pause shortly before restarting ball
 
-  // Ball below screen
-  if (ball.y - ball.radius > H) {
-    loseLife();
-  }
+    gameRunning = false;
+
+    resetBall();
+
+    setTimeout(() => {
+
+        if (!gameOver) {
+
+            gameRunning = true;
+        }
+
+    }, 500);
 }
 
-function blockColor(block) {
-  const colors = ["#ef4444", "#a855f7", "#22c55e", "#f97316", "#eab308"];
-  return colors[Math.min(state.level - 1, colors.length - 1)];
-}
+// ============================================================
+// PADDLE MOVEMENT
+// ============================================================
 
-function updateBlocks() {
-  if (!state.running || state.paused || state.gameEnded) return;
+function movePaddle(delta) {
 
-  for (const block of blocks) {
-    if (!block.alive) continue;
+    // VERY IMPORTANT:
+    // Paddle cannot move after Game Over
 
-    const hit =
-      ball.x + ball.radius > block.x &&
-      ball.x - ball.radius < block.x + block.width &&
-      ball.y + ball.radius > block.y &&
-      ball.y - ball.radius < block.y + block.height;
-
-    if (!hit) continue;
-
-    // Avoid repeated collision while embedded
-    if (ball.speedY < 0 && ball.y > block.y + block.height) continue;
-    if (ball.speedY > 0 && ball.y < block.y) continue;
-
-    block.health--;
-
-    // EXACTLY 10 POINTS PER DESTROYED BLOCK
-    if (block.health <= 0) {
-      block.alive = false;
-      state.score += 10;
-      updateHUD();
+    if (
+        !gameRunning ||
+        gamePaused ||
+        gameOver
+    ) {
+        return;
     }
 
-    ball.speedY *= -1;
+    if (leftPressed) {
 
-    const remaining = blocks.some(b => b.alive);
-    if (!remaining) nextLevel();
+        paddle.x -=
+            paddle.speed * delta;
+    }
 
-    break;
-  }
+    if (rightPressed) {
+
+        paddle.x +=
+            paddle.speed * delta;
+    }
+
+    // Keep paddle inside canvas
+
+    if (paddle.x < 0) {
+
+        paddle.x = 0;
+    }
+
+    if (
+        paddle.x +
+            paddle.width >
+        W
+    ) {
+
+        paddle.x =
+            W - paddle.width;
+    }
 }
+
+// ============================================================
+// BALL UPDATE
+// ============================================================
+
+function updateBall(delta) {
+
+    if (
+        !gameRunning ||
+        gamePaused ||
+        gameOver
+    ) {
+        return;
+    }
+
+    const oldX = ball.x;
+    const oldY = ball.y;
+
+    ball.x += ball.vx * delta;
+
+    ball.y += ball.vy * delta;
+
+    // --------------------------------------------------------
+    // LEFT WALL
+    // --------------------------------------------------------
+
+    if (
+        ball.x - ball.radius <= 0
+    ) {
+
+        ball.x = ball.radius;
+
+        ball.vx =
+            Math.abs(ball.vx);
+    }
+
+    // --------------------------------------------------------
+    // RIGHT WALL
+    // --------------------------------------------------------
+
+    if (
+        ball.x + ball.radius >= W
+    ) {
+
+        ball.x =
+            W - ball.radius;
+
+        ball.vx =
+            -Math.abs(ball.vx);
+    }
+
+    // --------------------------------------------------------
+    // TOP WALL
+    // --------------------------------------------------------
+
+    if (
+        ball.y - ball.radius <= 0
+    ) {
+
+        ball.y = ball.radius;
+
+        ball.vy =
+            Math.abs(ball.vy);
+    }
+
+    // --------------------------------------------------------
+    // PADDLE COLLISION
+    // --------------------------------------------------------
+
+    if (
+        ball.vy > 0 &&
+
+        ball.x + ball.radius >
+            paddle.x &&
+
+        ball.x - ball.radius <
+            paddle.x +
+                paddle.width &&
+
+        ball.y + ball.radius >=
+            paddle.y &&
+
+        ball.y - ball.radius <=
+            paddle.y +
+                paddle.height
+    ) {
+
+        // Calculate where ball hit paddle
+
+        const hitPosition =
+            (
+                ball.x -
+                (
+                    paddle.x +
+                    paddle.width / 2
+                )
+            ) /
+            (paddle.width / 2);
+
+        // Change horizontal angle
+
+        ball.vx =
+            hitPosition * 430;
+
+        // Make sure ball doesn't become too vertical
+
+        if (
+            Math.abs(ball.vx) < 100
+        ) {
+
+            ball.vx =
+                hitPosition < 0
+                    ? -100
+                    : 100;
+        }
+
+        // Bounce upward
+
+        ball.vy =
+            -Math.abs(ball.vy);
+
+        // Prevent sticking
+
+        ball.y =
+            paddle.y -
+            ball.radius -
+            1;
+    }
+
+    // --------------------------------------------------------
+    // BLOCK COLLISION
+    // --------------------------------------------------------
+
+    for (const block of blocks) {
+
+        if (!block.alive) {
+            continue;
+        }
+
+        const hit =
+            ball.x + ball.radius >
+                block.x &&
+
+            ball.x - ball.radius <
+                block.x +
+                    block.width &&
+
+            ball.y + ball.radius >
+                block.y &&
+
+            ball.y - ball.radius <
+                block.y +
+                    block.height;
+
+        if (!hit) {
+            continue;
+        }
+
+        // Damage block
+
+        block.health--;
+
+        // ----------------------------------------------------
+        // BLOCK DESTROYED
+        // 1 BLOCK = 10 POINTS
+        // ----------------------------------------------------
+
+        if (block.health <= 0) {
+
+            block.alive = false;
+
+            score += 10;
+
+            updateHUD();
+        }
+
+        // ----------------------------------------------------
+        // DETERMINE BOUNCE DIRECTION
+        // ----------------------------------------------------
+
+        const wasAbove =
+            oldY + ball.radius <=
+            block.y;
+
+        const wasBelow =
+            oldY - ball.radius >=
+            block.y +
+                block.height;
+
+        if (
+            wasAbove ||
+            wasBelow
+        ) {
+
+            ball.vy *= -1;
+
+        } else {
+
+            ball.vx *= -1;
+        }
+
+        // Only hit one block per frame
+
+        break;
+    }
+
+    // --------------------------------------------------------
+    // CHECK LEVEL COMPLETE
+    // --------------------------------------------------------
+
+    const remaining =
+        blocks.some(
+            block =>
+                block.alive
+        );
+
+    if (!remaining) {
+
+        levelComplete();
+
+        return;
+    }
+
+    // --------------------------------------------------------
+    // BALL FALLS BELOW SCREEN
+    // --------------------------------------------------------
+
+    if (
+        ball.y -
+            ball.radius >
+        H
+    ) {
+
+        loseLife();
+    }
+}
+
+// ============================================================
+// BLOCK COLOR
+// ============================================================
+
+function getBlockColor() {
+
+    if (level === 1) {
+        return "#ef4444";
+    }
+
+    if (level === 2) {
+        return "#a855f7";
+    }
+
+    if (level === 3) {
+        return "#22c55e";
+    }
+
+    if (level === 4) {
+        return "#f97316";
+    }
+
+    return "#eab308";
+}
+
+// ============================================================
+// DRAW BACKGROUND
+// ============================================================
 
 function drawBackground() {
-  ctx.fillStyle = "#020711";
-  ctx.fillRect(0, 0, W, H);
 
-  // subtle grid
-  ctx.strokeStyle = "rgba(50,199,255,.035)";
-  ctx.lineWidth = 1;
+    // Simple background for mobile performance
 
-  for (let x = 0; x <= W; x += 45) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, H);
-    ctx.stroke();
-  }
+    ctx.fillStyle = "#020711";
 
-  for (let y = 0; y <= H; y += 45) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
-  }
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
 }
+
+// ============================================================
+// DRAW BALL
+// ============================================================
 
 function drawBall() {
-  const gradient = ctx.createRadialGradient(
-    ball.x - 3, ball.y - 3, 1,
-    ball.x, ball.y, ball.radius + 10
-  );
-  gradient.addColorStop(0, "#ffffff");
-  gradient.addColorStop(.25, "#b9f1ff");
-  gradient.addColorStop(1, "#32c7ff");
 
-  ctx.save();
-  ctx.shadowColor = "#32c7ff";
-  ctx.shadowBlur = 20;
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+    ctx.fillStyle = "#38bdf8";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        ball.x,
+        ball.y,
+        ball.radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
 }
+
+// ============================================================
+// DRAW PADDLE
+// ============================================================
 
 function drawPaddle() {
-  const gradient = ctx.createLinearGradient(
-    paddle.x, paddle.y,
-    paddle.x + paddle.width, paddle.y
-  );
-  gradient.addColorStop(0, "#f7c92b");
-  gradient.addColorStop(.5, "#fff3a3");
-  gradient.addColorStop(1, "#f7c92b");
 
-  ctx.save();
-  ctx.shadowColor = "#ffd43b";
-  ctx.shadowBlur = 18;
-  ctx.fillStyle = gradient;
-  roundRect(
-    paddle.x,
-    paddle.y,
-    paddle.width,
-    paddle.height,
-    8
-  );
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawBlocks() {
-  for (const block of blocks) {
-    if (!block.alive) continue;
-
-    const color = blockColor(block);
-    const alpha = block.health < block.maxHealth ? .48 : .95;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 9;
-    ctx.fillStyle = color;
+    ctx.fillStyle = "#facc15";
 
     roundRect(
-      block.x,
-      block.y,
-      block.width,
-      block.height,
-      5
+        paddle.x,
+        paddle.y,
+        paddle.width,
+        paddle.height,
+        6
     );
+
     ctx.fill();
+}
 
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = "rgba(255,255,255,.18)";
-    ctx.stroke();
+// ============================================================
+// DRAW BLOCKS
+// ============================================================
 
-    if (block.maxHealth > 1) {
-      ctx.fillStyle = "#fff";
-      ctx.font = "700 12px Inter, Arial";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(
-        String(block.health),
-        block.x + block.width / 2,
-        block.y + block.height / 2
-      );
+function drawBlocks() {
+
+    const color =
+        getBlockColor();
+
+    for (const block of blocks) {
+
+        if (!block.alive) {
+            continue;
+        }
+
+        // Damaged blocks become darker
+
+        if (
+            block.health <
+            block.maxHealth
+        ) {
+
+            ctx.globalAlpha = 0.45;
+
+        } else {
+
+            ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = color;
+
+        roundRect(
+            block.x,
+            block.y,
+            block.width,
+            block.height,
+            5
+        );
+
+        ctx.fill();
+
+        // Show health for strong blocks
+
+        if (
+            block.maxHealth > 1
+        ) {
+
+            ctx.globalAlpha = 1;
+
+            ctx.fillStyle = "#ffffff";
+
+            ctx.font =
+                "bold 12px Arial";
+
+            ctx.textAlign = "center";
+
+            ctx.textBaseline = "middle";
+
+            ctx.fillText(
+                block.health,
+                block.x +
+                    block.width / 2,
+                block.y +
+                    block.height / 2
+            );
+        }
     }
 
-    ctx.restore();
-  }
+    ctx.globalAlpha = 1;
 }
 
-function roundRect(x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + width, y, x + width, y + height, radius);
-  ctx.arcTo(x + width, y + height, x, y + height, radius);
-  ctx.arcTo(x, y + height, x, y, radius);
-  ctx.arcTo(x, y, x + width, y, radius);
-  ctx.closePath();
+// ============================================================
+// ROUNDED RECTANGLE
+// ============================================================
+
+function roundRect(
+    x,
+    y,
+    width,
+    height,
+    radius
+) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x + radius,
+        y
+    );
+
+    ctx.lineTo(
+        x + width - radius,
+        y
+    );
+
+    ctx.quadraticCurveTo(
+        x + width,
+        y,
+        x + width,
+        y + radius
+    );
+
+    ctx.lineTo(
+        x + width,
+        y + height - radius
+    );
+
+    ctx.quadraticCurveTo(
+        x + width,
+        y + height,
+        x + width - radius,
+        y + height
+    );
+
+    ctx.lineTo(
+        x + radius,
+        y + height
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y + height,
+        x,
+        y + height - radius
+    );
+
+    ctx.lineTo(
+        x,
+        y + radius
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y,
+        x + radius,
+        y
+    );
+
+    ctx.closePath();
 }
+
+// ============================================================
+// RENDER
+// ============================================================
 
 function render() {
-  drawBackground();
-  drawBlocks();
-  drawPaddle();
-  drawBall();
-}
 
-function gameLoop() {
-  movePaddle();
-  updateBall();
-  updateBlocks();
-  render();
-  requestAnimationFrame(gameLoop);
+    drawBackground();
+
+    drawBlocks();
+
+    drawPaddle();
+
+    drawBall();
 }
 
 // ============================================================
-// INPUTS
+// KEYBOARD
 // ============================================================
 
-document.addEventListener("keydown", (e) => {
-  if (!state.running || state.paused || state.gameEnded) return;
+document.addEventListener(
+    "keydown",
+    function (event) {
 
-  if (["ArrowLeft", "ArrowRight", "a", "A", "d", "D", " "].includes(e.key)) {
-    e.preventDefault();
-  }
+        // IMPORTANT:
+        // Do nothing after Game Over
 
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-    leftPressed = true;
-  }
+        if (gameOver) {
+            return;
+        }
 
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-    rightPressed = true;
-  }
+        if (
+            event.key ===
+                "ArrowLeft" ||
+            event.key === "a" ||
+            event.key === "A"
+        ) {
 
-  if (e.key === " ") togglePause();
-});
+            event.preventDefault();
 
-document.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = false;
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
-});
+            if (gameRunning) {
+                leftPressed = true;
+            }
+        }
 
-canvas.addEventListener("mousemove", (e) => {
-  if (!state.running || state.paused || state.gameEnded) return;
+        if (
+            event.key ===
+                "ArrowRight" ||
+            event.key === "d" ||
+            event.key === "D"
+        ) {
 
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (W / rect.width);
+            event.preventDefault();
 
-  paddle.x = x - paddle.width / 2;
-  clampPaddle();
-});
-
-let touchActive = false;
-
-canvas.addEventListener("touchstart", (e) => {
-  if (!state.running || state.paused || state.gameEnded) return;
-  touchActive = true;
-  movePaddleToTouch(e.touches[0]);
-}, { passive: false });
-
-canvas.addEventListener("touchmove", (e) => {
-  if (!state.running || state.paused || state.gameEnded) return;
-  e.preventDefault();
-  movePaddleToTouch(e.touches[0]);
-}, { passive: false });
-
-canvas.addEventListener("touchend", () => {
-  touchActive = false;
-});
-
-function movePaddleToTouch(touch) {
-  const rect = canvas.getBoundingClientRect();
-  const x = (touch.clientX - rect.left) * (W / rect.width);
-  paddle.x = x - paddle.width / 2;
-  clampPaddle();
-}
-
-// ============================================================
-// PAUSE
-// ============================================================
-
-function togglePause() {
-  if (state.gameEnded || state.changingLevel) return;
-
-  if (!state.running && !state.paused) return;
-
-  state.paused = !state.paused;
-
-  if (state.paused) {
-    state.running = false;
-    clearControls();
-    showPause();
-  } else {
-    state.running = true;
-    hidePause();
-  }
-}
-
-function showPause() {
-  pauseOverlay.classList.remove("hidden");
-  document.getElementById("pauseBtn").textContent = "▶ Resume";
-}
-
-function hidePause() {
-  pauseOverlay.classList.add("hidden");
-  document.getElementById("pauseBtn").textContent = "Ⅱ Pause";
-}
-
-// ============================================================
-// NAVIGATION
-// ============================================================
-
-function route() {
-  const hash = location.hash.replace("#", "") || "home";
-  const page = hash === "leaderboard" ? "leaderboard" :
-               hash === "how-to-play" ? "how" :
-               hash === "play" ? "play" : "home";
-
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(page === "how" ? "how-to-play" : page).classList.add("active");
-
-  document.querySelectorAll(".nav-link").forEach(link => {
-    link.classList.toggle("active", link.dataset.page === page);
-  });
-
-  if (page === "leaderboard") renderLeaderboard();
-}
-
-window.addEventListener("hashchange", route);
-
-// Start game when user enters Play
-document.querySelectorAll('a[href="#play"]').forEach(a => {
-  a.addEventListener("click", () => {
-    setTimeout(() => {
-      if (!state.running && !state.gameEnded) {
-        state.running = true;
-      }
-    }, 0);
-  });
-});
-
-// ============================================================
-// BUTTONS
-// ============================================================
-
-document.getElementById("restartBtn").addEventListener("click", startNewGame);
-
-document.getElementById("playAgainBtn").addEventListener("click", () => {
-  // IMPORTANT: remove the Game Over / Win popup immediately
-  closeModal();
-  startNewGame();
-  location.hash = "play";
-});
-
-document.getElementById("pauseBtn").addEventListener("click", togglePause);
-document.getElementById("resumeBtn").addEventListener("click", togglePause);
-
-document.getElementById("fullscreenBtn").addEventListener("click", async () => {
-  const target = document.getElementById("gameWrap");
-
-  try {
-    if (!document.fullscreenElement) {
-      await target.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
+            if (gameRunning) {
+                rightPressed = true;
+            }
+        }
     }
-  } catch (err) {
-    console.warn("Fullscreen unavailable:", err);
-  }
-});
-
-document.getElementById("themeBtn").addEventListener("click", () => {
-  document.body.classList.toggle("light");
-  localStorage.setItem(
-    "neonBreakerTheme",
-    document.body.classList.contains("light") ? "light" : "dark"
-  );
-});
-
-document.getElementById("clearScoresBtn").addEventListener("click", () => {
-  if (confirm("Clear all saved local records?")) {
-    localStorage.removeItem("neonBreakerRecords");
-    localStorage.removeItem("neonBreakerBest");
-    bestScore = 0;
-    updateHUD();
-    renderLeaderboard();
-  }
-});
+);
 
 // ============================================================
-// LEADERBOARD
+// KEYBOARD RELEASE
 // ============================================================
 
-function getRecords() {
-  const records = JSON.parse(localStorage.getItem("neonBreakerRecords") || "[]");
-  return Array.isArray(records) ? records : [];
+document.addEventListener(
+    "keyup",
+    function (event) {
+
+        if (
+            event.key ===
+                "ArrowLeft" ||
+            event.key === "a" ||
+            event.key === "A"
+        ) {
+
+            leftPressed = false;
+        }
+
+        if (
+            event.key ===
+                "ArrowRight" ||
+            event.key === "d" ||
+            event.key === "D"
+        ) {
+
+            rightPressed = false;
+        }
+    }
+);
+
+// ============================================================
+// MOUSE CONTROL
+// ============================================================
+
+canvas.addEventListener(
+    "mousemove",
+    function (event) {
+
+        // Cursor can move after Game Over,
+        // but paddle must NOT move.
+
+        if (
+            !gameRunning ||
+            gamePaused ||
+            gameOver
+        ) {
+            return;
+        }
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+        const scaleX =
+            W / rect.width;
+
+        const mouseX =
+            (
+                event.clientX -
+                rect.left
+            ) *
+            scaleX;
+
+        paddle.x =
+            mouseX -
+            paddle.width / 2;
+
+        if (paddle.x < 0) {
+            paddle.x = 0;
+        }
+
+        if (
+            paddle.x +
+                paddle.width >
+            W
+        ) {
+
+            paddle.x =
+                W -
+                paddle.width;
+        }
+    }
+);
+
+// ============================================================
+// TOUCH CONTROL
+// ============================================================
+
+canvas.addEventListener(
+    "touchstart",
+    function (event) {
+
+        if (
+            !gameRunning ||
+            gamePaused ||
+            gameOver
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        movePaddleTouch(
+            event.touches[0]
+        );
+    },
+    {
+        passive: false
+    }
+);
+
+canvas.addEventListener(
+    "touchmove",
+    function (event) {
+
+        if (
+            !gameRunning ||
+            gamePaused ||
+            gameOver
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        movePaddleTouch(
+            event.touches[0]
+        );
+    },
+    {
+        passive: false
+    }
+);
+
+// ============================================================
+// TOUCH PADDLE MOVEMENT
+// ============================================================
+
+function movePaddleTouch(touch) {
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    const scaleX =
+        W / rect.width;
+
+    const touchX =
+        (
+            touch.clientX -
+            rect.left
+        ) *
+        scaleX;
+
+    paddle.x =
+        touchX -
+        paddle.width / 2;
+
+    if (paddle.x < 0) {
+        paddle.x = 0;
+    }
+
+    if (
+        paddle.x +
+            paddle.width >
+        W
+    ) {
+
+        paddle.x =
+            W -
+            paddle.width;
+    }
 }
 
-function saveRecord() {
-  if (state.score <= 0) return;
-
-  const records = getRecords();
-
-  records.push({
-    score: state.score,
-    level: Math.min(state.level, LEVELS),
-    date: new Date().toLocaleDateString()
-  });
-
-  records.sort((a, b) => b.score - a.score);
-
-  localStorage.setItem(
-    "neonBreakerRecords",
-    JSON.stringify(records.slice(0, 10))
-  );
-}
-
-function renderLeaderboard() {
-  const container = document.getElementById("leaderboardRows");
-  const records = getRecords();
-
-  if (!records.length) {
-    container.innerHTML = `
-      <div class="leader-row">
-        <span class="rank">—</span>
-        <span class="name">No records yet</span>
-        <span class="score">Play a run</span>
-        <span class="lvl">—</span>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = records.map((record, index) => `
-    <div class="leader-row">
-      <span class="rank">#${index + 1}</span>
-      <span class="name">Player • ${record.date}</span>
-      <span class="score">${record.score}</span>
-      <span class="lvl">L${record.level}</span>
-    </div>
-  `).join("");
-}
-
-
-
-// Save a finished run exactly once
-const originalEndGame = endGame;
-endGame = function() {
-  if (!state.gameEnded) {
-    saveRecord();
-  }
-  originalEndGame();
-};
-
-const originalShowWin = showWin;
-showWin = function() {
-  saveRecord();
-  originalShowWin();
-};
-
 // ============================================================
-// THEME
+// RESTART BUTTON
 // ============================================================
 
-if (localStorage.getItem("neonBreakerTheme") === "light") {
-  document.body.classList.add("light");
+restartBtn.addEventListener(
+    "click",
+    function () {
+
+        startGame();
+    }
+);
+
+// ============================================================
+// PLAY AGAIN BUTTON
+// ============================================================
+
+playAgainBtn.addEventListener(
+    "click",
+    function () {
+
+        // Remove Game Over message immediately
+
+        hideMessage();
+
+        // Completely restart game
+
+        startGame();
+    }
+);
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+
+function gameLoop(timestamp) {
+
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
+
+    let delta =
+        (timestamp - lastTime) / 1000;
+
+    lastTime = timestamp;
+
+    // Prevent huge movement after tab switching
+
+    if (delta > 0.033) {
+        delta = 0.033;
+    }
+
+    movePaddle(delta);
+
+    updateBall(delta);
+
+    render();
+
+    requestAnimationFrame(
+        gameLoop
+    );
 }
 
 // ============================================================
-// INITIALIZE
+// START
 // ============================================================
 
 createBlocks();
+
 resetBall();
+
 updateHUD();
-route();
+
 render();
-gameLoop();
+
+requestAnimationFrame(
+    gameLoop
+);
